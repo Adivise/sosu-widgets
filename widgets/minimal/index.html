@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Now Playing - Minimal Theme</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: transparent;
+      color: #f7f7f7;
+      padding: 16px;
+    }
+    .container {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 16px 18px;
+      border-radius: 12px;
+      background: linear-gradient(145deg, rgba(18,18,18,0.92), rgba(30,30,32,0.9));
+      border: 1px solid rgba(255,255,255,0.08);
+      box-shadow: 0 12px 28px rgba(0,0,0,0.35);
+      min-width: 320px;
+    }
+    #album-art {
+      width: 64px;
+      height: 64px;
+      border-radius: 10px;
+      background: radial-gradient(circle at 20% 20%, #ffb3c1, #ff4d6d 45%, #5f0f40 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 26px;
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,0.08);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+    }
+    #album-art img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    .info { flex: 1; min-width: 0; }
+    #title {
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: 0.1px;
+      margin-bottom: 4px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    #artist {
+      font-size: 14px;
+      color: #c8c8c8;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-bottom: 6px;
+    }
+    #time {
+      font-size: 12px;
+      color: #a0a0a0;
+      font-family: 'Consolas', monospace;
+    }
+    .waiting {
+      text-align: center;
+      padding: 22px;
+      color: rgba(255, 255, 255, 0.55);
+      background: rgba(0,0,0,0.5);
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.07);
+    }
+  </style>
+</head>
+<body>
+  <div id="waiting" class="waiting">Waiting for music...</div>
+  <div id="container" class="container" style="display: none;">
+    <div id="album-art">🎵</div>
+    <div class="info">
+      <div id="title">Song Title</div>
+      <div id="artist">Artist Name</div>
+      <div id="time">0:00 / 0:00</div>
+    </div>
+  </div>
+
+  <script>
+    let ws;
+    let reconnectAttempts = 0;
+    const MAX_RECONNECT_DELAY = 10000;
+    let lastImageFile = null;
+    let isShowingContent = false;
+    
+    function connect() {
+      ws = new WebSocket('ws://' + window.location.host);
+      
+      ws.onopen = () => {
+        console.log('[Minimal Theme] Connected');
+        reconnectAttempts = 0;
+      };
+      
+      ws.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        
+        if (!data || !data.title) {
+          if (isShowingContent) {
+            document.getElementById('waiting').style.display = 'block';
+            document.getElementById('container').style.display = 'none';
+            isShowingContent = false;
+          }
+          return;
+        }
+        
+        if (!isShowingContent) {
+          document.getElementById('waiting').style.display = 'none';
+          document.getElementById('container').style.display = 'flex';
+          isShowingContent = true;
+        }
+        
+        document.getElementById('title').textContent = data.title || 'Unknown';
+        document.getElementById('artist').textContent = data.artist || 'Unknown Artist';
+        
+        // Update album art only if image changed
+        const albumArt = document.getElementById('album-art');
+        if (data.imageFile !== lastImageFile) {
+          lastImageFile = data.imageFile;
+          if (data.imageFile) {
+            albumArt.innerHTML = '<img src="/image?t=' + Date.now() + '" alt="Album Art">';
+          } else {
+            albumArt.innerHTML = '🎵';
+          }
+        }
+        
+        // Update time
+        const formatTime = (s) => {
+          const mins = Math.floor(s / 60);
+          const secs = Math.floor(s % 60);
+          return mins + ':' + (secs < 10 ? '0' : '') + secs;
+        };
+        
+        if (data.currentTime !== undefined && data.duration) {
+          document.getElementById('time').textContent = 
+            formatTime(data.currentTime) + ' / ' + formatTime(data.duration);
+        }
+      };
+      
+      ws.onerror = (error) => {
+        console.error('[Minimal Theme] WebSocket error:', error);
+      };
+      
+      ws.onclose = () => {
+        console.log('[Minimal Theme] Disconnected, reconnecting...');
+        reconnectAttempts++;
+        const delay = Math.min(1000 * reconnectAttempts, MAX_RECONNECT_DELAY);
+        setTimeout(connect, delay);
+      };
+    }
+    
+    connect();
+  </script>
+</body>
+</html>
