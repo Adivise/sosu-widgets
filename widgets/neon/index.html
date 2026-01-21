@@ -6,181 +6,227 @@
   <title>Now Playing - Neon Theme</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    
+    :root {
+      --bg: #040510;
+      --panel: linear-gradient(130deg, rgba(12, 10, 28, 0.95), rgba(26, 9, 38, 0.92));
+      --accent-a: #ff00ff;
+      --accent-b: #00f0ff;
+      --text: #f7f8ff;
+      --muted: #a3b8ff;
+    }
     @keyframes glow-pulse {
-      0%, 100% { filter: drop-shadow(0 0 8px currentColor) drop-shadow(0 0 16px currentColor); }
-      50% { filter: drop-shadow(0 0 12px currentColor) drop-shadow(0 0 24px currentColor); }
+      0%, 100% { filter: drop-shadow(0 0 10px rgba(255,0,255,0.65)) drop-shadow(0 0 18px rgba(0,240,255,0.45)); }
+      50% { filter: drop-shadow(0 0 16px rgba(255,0,255,0.8)) drop-shadow(0 0 26px rgba(0,240,255,0.6)); }
     }
-    
-    @keyframes neon-flicker {
-      0%, 100% { opacity: 1; }
-      41%, 43% { opacity: 0.85; }
-      45% { opacity: 1; }
-    }
-    
     @keyframes slide-in {
-      from { transform: translateX(-30px); opacity: 0; }
+      from { transform: translateX(-26px); opacity: 0; }
       to { transform: translateX(0); opacity: 1; }
     }
-    
     body {
-      font-family: 'Segoe UI', 'Arial', sans-serif;
+      font-family: 'Inter', 'Segoe UI', sans-serif;
       background: transparent;
-      color: #fff;
+      color: var(--text);
       padding: 16px;
       overflow: hidden;
     }
-    
     .container {
+      position: relative;
       display: flex;
       align-items: center;
-      gap: 20px;
-      padding: 20px 24px;
-      border-radius: 16px;
-      background: linear-gradient(135deg, rgba(10, 10, 30, 0.95), rgba(20, 10, 40, 0.92));
-      border: 2px solid transparent;
-      background-clip: padding-box;
-      position: relative;
-      box-shadow: 
-        0 0 20px rgba(255, 0, 255, 0.3),
-        0 0 40px rgba(0, 255, 255, 0.2),
-        0 12px 32px rgba(0, 0, 0, 0.6);
-      animation: slide-in 0.6s ease-out;
+      gap: 18px;
+      padding: 22px 24px;
+      border-radius: 18px;
+      background: var(--panel);
+      border: 1px solid rgba(255,255,255,0.08);
+      box-shadow:
+        0 0 24px rgba(255,0,255,0.22),
+        0 0 36px rgba(0,240,255,0.18),
+        0 16px 40px rgba(0,0,0,0.65);
+      overflow: hidden;
+      animation: slide-in 0.55s ease-out;
+      isolation: isolate;
+      min-width: 360px;
     }
-    
     .container::before {
       content: '';
       position: absolute;
       inset: -2px;
-      border-radius: 16px;
-      padding: 2px;
-      background: linear-gradient(45deg, 
-        #ff00ff 0%, 
-        #00ffff 25%, 
-        #ff00ff 50%, 
-        #00ffff 75%, 
-        #ff00ff 100%);
-      mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-      -webkit-mask-composite: xor;
-      mask-composite: exclude;
-      animation: glow-pulse 3s ease-in-out infinite;
+      border-radius: 18px;
+      background: conic-gradient(from 120deg, var(--accent-a), var(--accent-b), var(--accent-a));
+      opacity: 0.45;
+      filter: blur(18px);
+      z-index: 0;
+      animation: glow-pulse 3s infinite ease-in-out;
     }
-    
+    .grid-overlay {
+      position: absolute;
+      inset: 0;
+      background-image: linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px),
+                        linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px);
+      background-size: 30px 30px;
+      opacity: 0.3;
+      z-index: 0;
+      mask-image: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.35), transparent 60%);
+    }
     #album-art {
-      width: 80px;
-      height: 80px;
-      border-radius: 12px;
-      background: linear-gradient(135deg, #ff00ff, #00ffff);
+      width: 86px;
+      height: 86px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, var(--accent-a), var(--accent-b));
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 36px;
+      font-size: 38px;
       overflow: hidden;
       position: relative;
-      box-shadow: 
-        0 0 20px rgba(255, 0, 255, 0.6),
-        0 0 40px rgba(0, 255, 255, 0.4),
-        0 8px 24px rgba(0, 0, 0, 0.4);
+      box-shadow:
+        0 0 20px rgba(255, 0, 255, 0.65),
+        0 0 28px rgba(0, 240, 255, 0.55),
+        0 12px 28px rgba(0, 0, 0, 0.5);
       animation: glow-pulse 2s ease-in-out infinite;
       flex-shrink: 0;
+      z-index: 1;
     }
-    
-    #album-art::before {
+    #album-art::after {
       content: '';
       position: absolute;
-      inset: -4px;
-      border-radius: 12px;
-      background: linear-gradient(45deg, #ff00ff, #00ffff, #ff00ff);
-      z-index: -1;
-      filter: blur(8px);
-      opacity: 0.7;
+      inset: -6px;
+      border-radius: 16px;
+      background: radial-gradient(circle, rgba(255,0,255,0.6), rgba(0,240,255,0.4));
+      filter: blur(14px);
+      opacity: 0.5;
+      z-index: 0;
     }
-    
     #album-art img {
       width: 100%;
       height: 100%;
       object-fit: cover;
       display: block;
       position: relative;
-      z-index: 1;
+      z-index: 2;
     }
-    
-    .info { 
-      flex: 1; 
+    .info {
+      flex: 1;
       min-width: 0;
       position: relative;
-      z-index: 1;
+      z-index: 2;
     }
-    
     #title {
-      font-size: 22px;
+      font-size: 23px;
       font-weight: 900;
-      letter-spacing: 0.5px;
+      letter-spacing: 0.6px;
       margin-bottom: 6px;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
       color: #fff;
-      text-shadow: 
-        0 0 10px rgba(255, 0, 255, 0.8),
-        0 0 20px rgba(255, 0, 255, 0.6),
-        0 0 30px rgba(255, 0, 255, 0.4),
-        0 2px 4px rgba(0, 0, 0, 0.8);
-      animation: neon-flicker 5s infinite;
+      text-shadow:
+        0 0 14px rgba(255, 0, 255, 0.75),
+        0 0 20px rgba(0, 240, 255, 0.55),
+        0 2px 6px rgba(0, 0, 0, 0.9);
     }
-    
     #artist {
       font-size: 16px;
-      color: #00ffff;
+      color: var(--muted);
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
-      margin-bottom: 8px;
-      font-weight: 600;
-      text-shadow: 
-        0 0 10px rgba(0, 255, 255, 0.8),
-        0 0 20px rgba(0, 255, 255, 0.5),
-        0 2px 4px rgba(0, 0, 0, 0.8);
+      margin-bottom: 10px;
+      font-weight: 700;
+      text-shadow:
+        0 0 12px rgba(0, 240, 255, 0.65),
+        0 2px 6px rgba(0, 0, 0, 0.8);
     }
-    
+    .meta-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
     #time {
       font-size: 13px;
-      color: #ff00ff;
+      color: #ffd6ff;
       font-family: 'Consolas', 'Courier New', monospace;
       font-weight: 700;
-      letter-spacing: 1px;
-      text-shadow: 
-        0 0 8px rgba(255, 0, 255, 0.8),
-        0 0 16px rgba(255, 0, 255, 0.5),
-        0 2px 4px rgba(0, 0, 0, 0.8);
+      letter-spacing: 0.8px;
+      text-shadow:
+        0 0 10px rgba(255, 0, 255, 0.7),
+        0 0 16px rgba(0, 240, 255, 0.55);
     }
-    
+    .status {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: #b2fffb;
+      font-weight: 800;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      font-size: 12px;
+    }
+    .status-dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: var(--accent-b);
+      box-shadow: 0 0 12px rgba(0,240,255,0.9);
+    }
+    .progress {
+      width: 100%;
+      height: 7px;
+      background: rgba(255,255,255,0.06);
+      border-radius: 999px;
+      overflow: hidden;
+      margin-top: 10px;
+      border: 1px solid rgba(255,255,255,0.08);
+      position: relative;
+    }
+    .progress span {
+      display: block;
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--accent-a), var(--accent-b));
+      box-shadow: 0 0 16px rgba(255,0,255,0.55);
+      transition: width 0.22s ease;
+    }
     .waiting {
+      position: relative;
       text-align: center;
       padding: 28px;
-      color: #00ffff;
-      background: linear-gradient(135deg, rgba(10, 10, 30, 0.95), rgba(20, 10, 40, 0.92));
-      border-radius: 16px;
-      border: 2px solid rgba(0, 255, 255, 0.3);
-      font-weight: 700;
-      text-shadow: 
-        0 0 10px rgba(0, 255, 255, 0.8),
-        0 0 20px rgba(0, 255, 255, 0.5);
-      box-shadow: 
-        0 0 20px rgba(0, 255, 255, 0.3),
-        0 8px 24px rgba(0, 0, 0, 0.5);
-      animation: glow-pulse 2s ease-in-out infinite;
+      color: #b2fffb;
+      background: var(--panel);
+      border-radius: 18px;
+      border: 1px solid rgba(255,255,255,0.12);
+      box-shadow:
+        0 0 22px rgba(0, 240, 255, 0.25),
+        0 12px 30px rgba(0, 0, 0, 0.55);
+      min-width: 360px;
+      font-weight: 800;
+      letter-spacing: 0.6px;
+      overflow: hidden;
+    }
+    .waiting::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(120deg, rgba(255,0,255,0.18), rgba(0,240,255,0.2));
+      opacity: 0.6;
+      pointer-events: none;
     }
   </style>
 </head>
 <body>
   <div id="waiting" class="waiting">⚡ Waiting for music...</div>
   <div id="container" class="container" style="display: none;">
+    <div class="grid-overlay"></div>
     <div id="album-art">🎵</div>
     <div class="info">
       <div id="title">Song Title</div>
       <div id="artist">Artist Name</div>
-      <div id="time">0:00 / 0:00</div>
+      <div class="meta-row">
+        <div class="status"><span class="status-dot"></span><span id="status">Live</span></div>
+        <div id="time">0:00 / 0:00</div>
+      </div>
+      <div class="progress"><span id="progress-bar"></span></div>
     </div>
   </div>
 
@@ -195,7 +241,6 @@
       ws = new WebSocket('ws://' + window.location.host);
       
       ws.onopen = () => {
-        console.log('[Neon Theme] Connected');
         reconnectAttempts = 0;
       };
       
@@ -220,7 +265,6 @@
         document.getElementById('title').textContent = data.title || 'Unknown';
         document.getElementById('artist').textContent = data.artist || 'Unknown Artist';
         
-        // Update album art only if image changed
         const albumArt = document.getElementById('album-art');
         if (data.imageFile !== lastImageFile) {
           lastImageFile = data.imageFile;
@@ -231,7 +275,6 @@
           }
         }
         
-        // Update time
         const formatTime = (s) => {
           const mins = Math.floor(s / 60);
           const secs = Math.floor(s % 60);
@@ -241,6 +284,8 @@
         if (data.currentTime !== undefined && data.duration) {
           document.getElementById('time').textContent = 
             formatTime(data.currentTime) + ' / ' + formatTime(data.duration);
+          const pct = Math.max(0, Math.min(100, (data.currentTime / data.duration) * 100));
+          document.getElementById('progress-bar').style.width = pct + '%';
         }
       };
       
@@ -249,7 +294,6 @@
       };
       
       ws.onclose = () => {
-        console.log('[Neon Theme] Disconnected, reconnecting...');
         reconnectAttempts++;
         const delay = Math.min(1000 * reconnectAttempts, MAX_RECONNECT_DELAY);
         setTimeout(connect, delay);
