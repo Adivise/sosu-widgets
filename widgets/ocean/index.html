@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Now Playing - Ocean Theme</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --bg: #0f172a;
+      --panel: linear-gradient(145deg, #0f172a, #0369a1);
+      --text: #e0f2fe;
+      --muted: #bae6fd;
+      --accent-a: #22d3ee;
+      --accent-b: #38bdf8;
+    }
+    body {
+      font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+      background: transparent;
+      color: var(--text);
+      padding: 16px;
+      overflow: hidden;
+    }
+    .container {
+      position: relative;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 18px 20px;
+      border-radius: 18px;
+      background: radial-gradient(circle at 0% 0%, rgba(34, 211, 238, 0.5), transparent 55%),
+                  radial-gradient(circle at 100% 100%, rgba(37, 99, 235, 0.5), transparent 55%),
+                  #020617;
+      border: 1px solid rgba(56, 189, 248, 0.6);
+      box-shadow:
+        0 18px 40px rgba(15, 23, 42, 0.9),
+        0 0 30px rgba(56, 189, 248, 0.5);
+      min-width: 360px;
+      overflow: hidden;
+      isolation: isolate;
+    }
+    .waves {
+      position: absolute;
+      inset: 40% -40% -40%;
+      background:
+        radial-gradient(circle at 10% 40%, rgba(56, 189, 248, 0.4), transparent 60%),
+        radial-gradient(circle at 60% 80%, rgba(59, 130, 246, 0.4), transparent 60%);
+      opacity: 0.9;
+      mix-blend-mode: screen;
+      z-index: 0;
+    }
+    #album-art {
+      width: 80px;
+      height: 80px;
+      border-radius: 18px;
+      background: linear-gradient(135deg, #0ea5e9, #22d3ee);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 34px;
+      overflow: hidden;
+      border: 1px solid rgba(191, 219, 254, 0.8);
+      box-shadow:
+        0 12px 30px rgba(15, 23, 42, 0.9),
+        0 0 26px rgba(56, 189, 248, 0.7);
+      position: relative;
+      z-index: 1;
+      flex-shrink: 0;
+    }
+    #album-art img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    .info {
+      flex: 1;
+      min-width: 0;
+      position: relative;
+      z-index: 1;
+    }
+    .label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.18em;
+      color: #bae6fd;
+      margin-bottom: 4px;
+    }
+    #title {
+      font-size: 20px;
+      font-weight: 800;
+      margin-bottom: 4px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      color: #e0f2fe;
+    }
+    #artist {
+      font-size: 14px;
+      color: var(--muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-bottom: 8px;
+      font-weight: 500;
+    }
+    .meta-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    #time {
+      font-size: 12px;
+      color: #bfdbfe;
+      font-family: 'Consolas', 'Courier New', monospace;
+    }
+    .status {
+      font-size: 12px;
+      color: #7dd3fc;
+      font-weight: 600;
+    }
+    .progress {
+      width: 100%;
+      height: 6px;
+      background: rgba(15, 23, 42, 0.9);
+      border-radius: 999px;
+      overflow: hidden;
+      margin-top: 8px;
+      border: 1px solid rgba(56, 189, 248, 0.7);
+    }
+    .progress span {
+      display: block;
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--accent-a), var(--accent-b));
+      box-shadow:
+        0 0 20px rgba(34, 211, 238, 0.8),
+        0 0 18px rgba(56, 189, 248, 0.7);
+      transition: width 0.25s ease;
+    }
+    .waiting {
+      position: relative;
+      text-align: center;
+      padding: 22px;
+      color: #e0f2fe;
+      background: #020617;
+      border-radius: 18px;
+      border: 1px solid rgba(56, 189, 248, 0.7);
+      box-shadow:
+        0 18px 40px rgba(15, 23, 42, 0.95),
+        0 0 26px rgba(56, 189, 248, 0.5);
+      min-width: 360px;
+      font-weight: 600;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+    }
+  </style>
+</head>
+<body>
+  <div id="waiting" class="waiting">Waiting for music...</div>
+  <div id="container" class="container" style="display: none;">
+    <div class="waves"></div>
+    <div id="album-art">🌊</div>
+    <div class="info">
+      <div class="label">Ocean Waves</div>
+      <div id="title">Song Title</div>
+      <div id="artist">Artist Name</div>
+      <div class="meta-row">
+        <div class="status" id="status">Live</div>
+        <div id="time">0:00 / 0:00</div>
+      </div>
+      <div class="progress"><span id="progress-bar"></span></div>
+    </div>
+  </div>
+
+  <script>
+    let ws;
+    let reconnectAttempts = 0;
+    const MAX_RECONNECT_DELAY = 10000;
+    let lastImageFile = null;
+    let isShowingContent = false;
+
+    function connect() {
+      ws = new WebSocket('ws://' + window.location.host);
+
+      ws.onopen = () => {
+        reconnectAttempts = 0;
+      };
+
+      ws.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+
+        if (!data || !data.title) {
+          if (isShowingContent) {
+            document.getElementById('waiting').style.display = 'block';
+            document.getElementById('container').style.display = 'none';
+            isShowingContent = false;
+          }
+          return;
+        }
+
+        if (!isShowingContent) {
+          document.getElementById('waiting').style.display = 'none';
+          document.getElementById('container').style.display = 'flex';
+          isShowingContent = true;
+        }
+
+        document.getElementById('title').textContent = data.title || 'Unknown';
+        document.getElementById('artist').textContent = data.artist || 'Unknown Artist';
+
+        const albumArt = document.getElementById('album-art');
+        if (data.imageFile !== lastImageFile) {
+          lastImageFile = data.imageFile;
+          if (data.imageFile) {
+            albumArt.innerHTML = '<img src="/image?t=' + Date.now() + '" alt="Album Art">';
+          } else {
+            albumArt.innerHTML = '🌊';
+          }
+        }
+
+        const formatTime = (s) => {
+          const mins = Math.floor(s / 60);
+          const secs = Math.floor(s % 60);
+          return mins + ':' + (secs < 10 ? '0' : '') + secs;
+        };
+
+        if (data.currentTime !== undefined && data.duration) {
+          document.getElementById('time').textContent =
+            formatTime(data.currentTime) + ' / ' + formatTime(data.duration);
+          const pct = Math.max(0, Math.min(100, (data.currentTime / data.duration) * 100));
+          document.getElementById('progress-bar').style.width = pct + '%';
+        }
+      };
+
+      ws.onerror = (error) => {
+        console.error('[Ocean Theme] WebSocket error:', error);
+      };
+
+      ws.onclose = () => {
+        reconnectAttempts++;
+        const delay = Math.min(1000 * reconnectAttempts, MAX_RECONNECT_DELAY);
+        setTimeout(connect, delay);
+      };
+    }
+
+    connect();
+  </script>
+</body>
+</html>
+

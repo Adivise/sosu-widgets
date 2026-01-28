@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Now Playing - Outline Theme</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --bg: transparent;
+      --panel: transparent;
+      --border: rgba(148, 163, 184, 0.8);
+      --text: #e5e7eb;
+      --muted: #9ca3af;
+      --accent: #38bdf8;
+    }
+    body {
+      font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+      background: transparent;
+      color: var(--text);
+      padding: 12px 16px;
+      overflow: hidden;
+    }
+    .container {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 12px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: rgba(15, 23, 42, 0.4);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      min-width: 340px;
+    }
+    #album-art {
+      width: 40px;
+      height: 40px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+    #album-art img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    .info {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    #title {
+      font-size: 14px;
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      color: #f9fafb;
+    }
+    #artist {
+      font-size: 12px;
+      color: var(--muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    #time {
+      font-size: 11px;
+      color: #9ca3af;
+      font-family: 'Consolas', 'Courier New', monospace;
+    }
+    .right {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 4px;
+      margin-left: 8px;
+    }
+    .pill {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.16em;
+      padding: 2px 8px;
+      border-radius: 999px;
+      border: 1px solid var(--accent);
+      color: var(--accent);
+    }
+    .waiting {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 12px;
+      border-radius: 999px;
+      border: 1px dashed var(--border);
+      color: var(--muted);
+      background: rgba(15, 23, 42, 0.4);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      font-size: 12px;
+      min-width: 260px;
+    }
+  </style>
+</head>
+<body>
+  <div id="waiting" class="waiting">
+    <span>🎧</span>
+    <span>Waiting for music...</span>
+  </div>
+  <div id="container" class="container" style="display: none;">
+    <div id="album-art">♪</div>
+    <div class="info">
+      <div id="title">Song Title</div>
+      <div id="artist">Artist Name</div>
+    </div>
+    <div class="right">
+      <div class="pill" id="status">Live</div>
+      <div id="time">0:00 / 0:00</div>
+    </div>
+  </div>
+
+  <script>
+    let ws;
+    let reconnectAttempts = 0;
+    const MAX_RECONNECT_DELAY = 10000;
+    let lastImageFile = null;
+    let isShowingContent = false;
+
+    function connect() {
+      ws = new WebSocket('ws://' + window.location.host);
+
+      ws.onopen = () => {
+        reconnectAttempts = 0;
+      };
+
+      ws.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+
+        if (!data || !data.title) {
+          if (isShowingContent) {
+            document.getElementById('waiting').style.display = 'inline-flex';
+            document.getElementById('container').style.display = 'none';
+            isShowingContent = false;
+          }
+          return;
+        }
+
+        if (!isShowingContent) {
+          document.getElementById('waiting').style.display = 'none';
+          document.getElementById('container').style.display = 'inline-flex';
+          isShowingContent = true;
+        }
+
+        document.getElementById('title').textContent = data.title || 'Unknown';
+        document.getElementById('artist').textContent = data.artist || 'Unknown Artist';
+
+        const albumArt = document.getElementById('album-art');
+        if (data.imageFile !== lastImageFile) {
+          lastImageFile = data.imageFile;
+          if (data.imageFile) {
+            albumArt.innerHTML = '<img src="/image?t=' + Date.now() + '" alt="Album Art">';
+          } else {
+            albumArt.innerHTML = '♪';
+          }
+        }
+
+        const formatTime = (s) => {
+          const mins = Math.floor(s / 60);
+          const secs = Math.floor(s % 60);
+          return mins + ':' + (secs < 10 ? '0' : '') + secs;
+        };
+
+        if (data.currentTime !== undefined && data.duration) {
+          document.getElementById('time').textContent =
+            formatTime(data.currentTime) + ' / ' + formatTime(data.duration);
+        }
+      };
+
+      ws.onerror = (error) => {
+        console.error('[Outline Theme] WebSocket error:', error);
+      };
+
+      ws.onclose = () => {
+        reconnectAttempts++;
+        const delay = Math.min(1000 * reconnectAttempts, MAX_RECONNECT_DELAY);
+        setTimeout(connect, delay);
+      };
+    }
+
+    connect();
+  </script>
+</body>
+</html>
+

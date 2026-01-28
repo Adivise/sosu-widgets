@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Now Playing - Aurora Theme</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --bg: #020817;
+      --card: radial-gradient(circle at 0% 0%, #22c55e22 0%, transparent 55%),
+              radial-gradient(circle at 100% 100%, #38bdf822 0%, transparent 55%),
+              #020617;
+      --panel: linear-gradient(135deg, rgba(15, 23, 42, 0.96), rgba(15, 23, 42, 0.9));
+      --border: rgba(148, 163, 184, 0.5);
+      --text: #e5f9ff;
+      --muted: #9ca3af;
+      --accent-a: #22c55e;
+      --accent-b: #38bdf8;
+    }
+    body {
+      font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: transparent;
+      color: var(--text);
+      padding: 16px;
+      overflow: hidden;
+    }
+    .container {
+      position: relative;
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      padding: 18px 20px;
+      border-radius: 16px;
+      background: var(--panel);
+      border: 1px solid rgba(148, 163, 184, 0.25);
+      box-shadow:
+        0 18px 45px rgba(0, 0, 0, 0.7),
+        0 0 40px rgba(34, 197, 94, 0.18),
+        0 0 50px rgba(56, 189, 248, 0.14);
+      min-width: 360px;
+      overflow: hidden;
+      isolation: isolate;
+    }
+    .container::before {
+      content: '';
+      position: absolute;
+      inset: -40%;
+      background:
+        radial-gradient(circle at 0% 0%, rgba(34, 197, 94, 0.2), transparent 60%),
+        radial-gradient(circle at 100% 100%, rgba(56, 189, 248, 0.25), transparent 55%);
+      opacity: 0.85;
+      mix-blend-mode: screen;
+      z-index: 0;
+    }
+    #album-art {
+      width: 80px;
+      height: 80px;
+      border-radius: 14px;
+      background: radial-gradient(circle at 30% 0%, rgba(56, 189, 248, 0.9), transparent 60%),
+                  radial-gradient(circle at 70% 100%, rgba(34, 197, 94, 0.8), transparent 60%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 34px;
+      overflow: hidden;
+      border: 1px solid rgba(148, 163, 184, 0.4);
+      box-shadow:
+        0 12px 30px rgba(0, 0, 0, 0.7),
+        0 0 26px rgba(34, 197, 94, 0.4),
+        0 0 30px rgba(56, 189, 248, 0.4);
+      position: relative;
+      z-index: 1;
+      flex-shrink: 0;
+    }
+    #album-art::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at 30% 20%, rgba(255, 255, 255, 0.35), transparent 55%);
+      mix-blend-mode: screen;
+      pointer-events: none;
+    }
+    #album-art img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      position: relative;
+      z-index: 2;
+    }
+    .info {
+      flex: 1;
+      min-width: 0;
+      position: relative;
+      z-index: 1;
+    }
+    .label {
+      font-size: 11px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: rgba(148, 163, 184, 0.85);
+      margin-bottom: 4px;
+    }
+    #title {
+      font-size: 20px;
+      font-weight: 800;
+      letter-spacing: 0.02em;
+      margin-bottom: 4px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      color: var(--text);
+    }
+    #artist {
+      font-size: 14px;
+      color: var(--muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-bottom: 8px;
+      font-weight: 500;
+    }
+    .meta-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    #time {
+      font-size: 12px;
+      color: rgba(226, 232, 240, 0.9);
+      font-family: 'Consolas', 'Courier New', monospace;
+      letter-spacing: 0.12em;
+    }
+    .status {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: #a5f3fc;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.16em;
+    }
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: var(--accent-b);
+      box-shadow:
+        0 0 8px rgba(56, 189, 248, 0.9),
+        0 0 18px rgba(34, 197, 94, 0.8);
+    }
+    .progress {
+      width: 100%;
+      height: 6px;
+      background: rgba(15, 23, 42, 0.9);
+      border-radius: 999px;
+      overflow: hidden;
+      margin-top: 8px;
+      border: 1px solid rgba(148, 163, 184, 0.3);
+    }
+    .progress span {
+      display: block;
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--accent-a), var(--accent-b));
+      box-shadow:
+        0 0 18px rgba(34, 197, 94, 0.6),
+        0 0 18px rgba(56, 189, 248, 0.5);
+      transition: width 0.25s ease;
+    }
+    .waiting {
+      text-align: center;
+      padding: 24px;
+      color: rgba(226, 232, 240, 0.9);
+      background: var(--card);
+      border-radius: 16px;
+      border: 1px solid rgba(148, 163, 184, 0.3);
+      box-shadow:
+        0 18px 45px rgba(0, 0, 0, 0.7),
+        0 0 30px rgba(34, 197, 94, 0.3);
+      min-width: 360px;
+      font-weight: 600;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+    }
+  </style>
+</head>
+<body>
+  <div id="waiting" class="waiting">Waiting for music...</div>
+  <div id="container" class="container" style="display: none;">
+    <div id="album-art">🎵</div>
+    <div class="info">
+      <div class="label">Now Playing</div>
+      <div id="title">Song Title</div>
+      <div id="artist">Artist Name</div>
+      <div class="meta-row">
+        <div class="status"><span class="status-dot"></span><span id="status">Live</span></div>
+        <div id="time">0:00 / 0:00</div>
+      </div>
+      <div class="progress"><span id="progress-bar"></span></div>
+    </div>
+  </div>
+
+  <script>
+    let ws;
+    let reconnectAttempts = 0;
+    const MAX_RECONNECT_DELAY = 10000;
+    let lastImageFile = null;
+    let isShowingContent = false;
+
+    function connect() {
+      ws = new WebSocket('ws://' + window.location.host);
+
+      ws.onopen = () => {
+        reconnectAttempts = 0;
+      };
+
+      ws.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+
+        if (!data || !data.title) {
+          if (isShowingContent) {
+            document.getElementById('waiting').style.display = 'block';
+            document.getElementById('container').style.display = 'none';
+            isShowingContent = false;
+          }
+          return;
+        }
+
+        if (!isShowingContent) {
+          document.getElementById('waiting').style.display = 'none';
+          document.getElementById('container').style.display = 'flex';
+          isShowingContent = true;
+        }
+
+        document.getElementById('title').textContent = data.title || 'Unknown';
+        document.getElementById('artist').textContent = data.artist || 'Unknown Artist';
+
+        const albumArt = document.getElementById('album-art');
+        if (data.imageFile !== lastImageFile) {
+          lastImageFile = data.imageFile;
+          if (data.imageFile) {
+            albumArt.innerHTML = '<img src="/image?t=' + Date.now() + '" alt="Album Art">';
+          } else {
+            albumArt.innerHTML = '🎵';
+          }
+        }
+
+        const formatTime = (s) => {
+          const mins = Math.floor(s / 60);
+          const secs = Math.floor(s % 60);
+          return mins + ':' + (secs < 10 ? '0' : '') + secs;
+        };
+
+        if (data.currentTime !== undefined && data.duration) {
+          document.getElementById('time').textContent =
+            formatTime(data.currentTime) + ' / ' + formatTime(data.duration);
+          const pct = Math.max(0, Math.min(100, (data.currentTime / data.duration) * 100));
+          document.getElementById('progress-bar').style.width = pct + '%';
+        }
+      };
+
+      ws.onerror = (error) => {
+        console.error('[Aurora Theme] WebSocket error:', error);
+      };
+
+      ws.onclose = () => {
+        reconnectAttempts++;
+        const delay = Math.min(1000 * reconnectAttempts, MAX_RECONNECT_DELAY);
+        setTimeout(connect, delay);
+      };
+    }
+
+    connect();
+  </script>
+</body>
+</html>
+

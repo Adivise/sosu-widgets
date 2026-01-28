@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Now Playing - Terminal Theme</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --bg: #020617;
+      --panel: #020617;
+      --border: #22c55e;
+      --text: #e5e7eb;
+      --muted: #6b7280;
+      --accent: #22c55e;
+    }
+    body {
+      font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+      background: transparent;
+      color: var(--text);
+      padding: 12px 16px;
+      overflow: hidden;
+    }
+    .container {
+      position: relative;
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      padding: 14px 16px;
+      border-radius: 10px;
+      background: radial-gradient(circle at 0% 0%, rgba(34, 197, 94, 0.12), transparent 55%),
+                  radial-gradient(circle at 100% 100%, rgba(34, 197, 94, 0.2), transparent 55%),
+                  #020617;
+      border: 1px solid rgba(34, 197, 94, 0.8);
+      box-shadow:
+        0 0 24px rgba(0, 0, 0, 0.9),
+        0 0 26px rgba(34, 197, 94, 0.5);
+      min-width: 360px;
+      overflow: hidden;
+    }
+    .prompt {
+      color: var(--accent);
+      font-weight: 600;
+    }
+    .divider {
+      margin: 4px 0 6px;
+      height: 1px;
+      background: linear-gradient(90deg, rgba(34, 197, 94, 0.7), transparent);
+    }
+    #album-art {
+      width: 52px;
+      height: 52px;
+      border-radius: 6px;
+      border: 1px solid rgba(34, 197, 94, 0.7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      margin-top: 4px;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+    #album-art img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    .info {
+      flex: 1;
+      min-width: 0;
+    }
+    .line {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      font-size: 13px;
+      line-height: 1.4;
+    }
+    .line-muted {
+      color: var(--muted);
+    }
+    .label {
+      color: var(--accent);
+    }
+    #title {
+      color: #e5e7eb;
+    }
+    #artist {
+      color: #9ca3af;
+    }
+    #time {
+      color: #a7f3d0;
+    }
+    .progress {
+      margin-top: 6px;
+      font-size: 11px;
+      color: #22c55e;
+    }
+    .bar-bg {
+      display: inline-block;
+      width: 22ch;
+      border: 1px solid rgba(34, 197, 94, 0.6);
+      padding: 1px 2px;
+      margin-left: 4px;
+    }
+    #progress-bar {
+      display: inline-block;
+      text-align: left;
+      color: #bbf7d0;
+    }
+    .waiting {
+      font-size: 13px;
+      padding: 12px 14px;
+      border-radius: 10px;
+      background: #020617;
+      border: 1px solid rgba(55, 65, 81, 0.9);
+      color: #9ca3af;
+      min-width: 360px;
+      box-shadow:
+        0 0 24px rgba(0, 0, 0, 0.95);
+    }
+  </style>
+</head>
+<body>
+  <div id="waiting" class="waiting">$ waiting for music...</div>
+  <div id="container" class="container" style="display: none;">
+    <div id="album-art">♪</div>
+    <div class="info">
+      <div class="line"><span class="prompt">➜</span> <span class="line-muted">now-playing</span></div>
+      <div class="divider"></div>
+      <div class="line"><span class="label">title</span><span class="line-muted">:</span> <span id="title">Song Title</span></div>
+      <div class="line"><span class="label">artist</span><span class="line-muted">:</span> <span id="artist">Artist Name</span></div>
+      <div class="line"><span class="label">time</span><span class="line-muted">:</span> <span id="time">0:00 / 0:00</span></div>
+      <div class="line progress"><span class="label">progress</span><span class="line-muted">:</span>
+        <span class="bar-bg"><span id="progress-bar">----------------------</span></span>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let ws;
+    let reconnectAttempts = 0;
+    const MAX_RECONNECT_DELAY = 10000;
+    let lastImageFile = null;
+    let isShowingContent = false;
+
+    function connect() {
+      ws = new WebSocket('ws://' + window.location.host);
+
+      ws.onopen = () => {
+        reconnectAttempts = 0;
+      };
+
+      ws.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+
+        if (!data || !data.title) {
+          if (isShowingContent) {
+            document.getElementById('waiting').style.display = 'block';
+            document.getElementById('container').style.display = 'none';
+            isShowingContent = false;
+          }
+          return;
+        }
+
+        if (!isShowingContent) {
+          document.getElementById('waiting').style.display = 'none';
+          document.getElementById('container').style.display = 'flex';
+          isShowingContent = true;
+        }
+
+        document.getElementById('title').textContent = data.title || 'Unknown';
+        document.getElementById('artist').textContent = data.artist || 'Unknown Artist';
+
+        const albumArt = document.getElementById('album-art');
+        if (data.imageFile !== lastImageFile) {
+          lastImageFile = data.imageFile;
+          if (data.imageFile) {
+            albumArt.innerHTML = '<img src="/image?t=' + Date.now() + '" alt="Album Art">';
+          } else {
+            albumArt.innerHTML = '♪';
+          }
+        }
+
+        const formatTime = (s) => {
+          const mins = Math.floor(s / 60);
+          const secs = Math.floor(s % 60);
+          return mins + ':' + (secs < 10 ? '0' : '') + secs;
+        };
+
+        if (data.currentTime !== undefined && data.duration) {
+          document.getElementById('time').textContent =
+            formatTime(data.currentTime) + ' / ' + formatTime(data.duration);
+          const pct = Math.max(0, Math.min(1, data.currentTime / data.duration));
+          const totalBlocks = 22;
+          const filled = Math.round(totalBlocks * pct);
+          const bar = '#'.repeat(filled) + '-'.repeat(totalBlocks - filled);
+          document.getElementById('progress-bar').textContent = bar;
+        }
+      };
+
+      ws.onerror = (error) => {
+        console.error('[Terminal Theme] WebSocket error:', error);
+      };
+
+      ws.onclose = () => {
+        reconnectAttempts++;
+        const delay = Math.min(1000 * reconnectAttempts, MAX_RECONNECT_DELAY);
+        setTimeout(connect, delay);
+      };
+    }
+
+    connect();
+  </script>
+</body>
+</html>
+
