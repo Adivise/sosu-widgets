@@ -1,17 +1,30 @@
-# sosu Widget Development Guide
+<p align="center">
+  <img src="https://capsule-render.vercel.app/api?type=waving&color=gradient&height=200&section=header&text=SOSU-Widgets&fontSize=80&fontAlignY=35&animation=twinkling&fontColor=gradient"/>
+</p>
 
-Build, preview, and share custom now-playing widgets for sosu.
+Create attractive, OBS-ready now-playing widgets for SOSU. This guide explains the theme layout, required metadata, live data contract, a minimal starter template, best practices, and publishing steps.
+
+---
 
 ## Project layout
+
+Each theme is a folder under `widgets/`:
 
 ```
 widgets/
   your-theme/
-    index.html      # required
-    metadata.json   # required
+    index.html      # required (entry point)
+    metadata.json   # required (theme info)
+    assets/         # optional images, css, js
 ```
 
-## metadata.json schema
+Keep your theme self-contained and avoid external dependencies so previews and the theme manager work offline.
+
+---
+
+## metadata.json (required)
+
+Example:
 
 ```json
 {
@@ -19,19 +32,26 @@ widgets/
   "version": "1.0.0",
   "author": "Your Name",
   "resolution": "750x250",
-  "authorLinks": "https://github.com/yourusername"
+  "authorLinks": "https://github.com/yourusername",
+  "description": "Short one-liner about the theme"
 }
 ```
 
-- `name`: Display name in the theme manager
-- `version`: Semver-ish string; bump when you change visuals/UX
-- `author`: Your credit
-- `resolution`: Recommended OBS browser source size
-- `authorLinks`: Optional profile/portfolio URL
+Fields:
+- `name` — Display name in the theme manager
+- `version` — Bump this on visual/UX changes so users can update
+- `author` — Your credit
+- `resolution` — Recommended OBS/browser source size (width x height)
+- `authorLinks` — Optional profile/portfolio URL
+- `description` — Optional short description shown in preview
 
-## Live data contract
+Validation note: the theme manager will reject invalid JSON or if `index.html` is missing.
 
-WebSocket `ws://localhost:3737` sends JSON roughly every second:
+---
+
+## Live data contract (WebSocket)
+
+The widget server broadcasts a JSON payload (approx. once per second) over the WebSocket connection to supply "now playing" data:
 
 ```json
 {
@@ -45,54 +65,62 @@ WebSocket `ws://localhost:3737` sends JSON roughly every second:
 }
 ```
 
-Album art is served at `/image`; append `?t=${Date.now()}` to avoid caching.
+- `imageFile`: file path served at `/image` (use `?t=TIMESTAMP` when loading to avoid caching).
+- Treat fields as optional; always use sensible fallbacks when values are missing.
 
-## Starter template (minimal wiring)
+---
+
+## Minimal starter template
+
+A small, resilient template that handles reconnect/backoff and avoids flicker:
 
 ```html
-<!DOCTYPE html>
-<html lang="en">
+<!doctype html>
+<html>
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Now Playing - Your Theme</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Now Playing — Theme</title>
   <style>
-    body { margin: 0; font-family: 'Inter','Segoe UI',sans-serif; background: transparent; color: #fff; }
+    html,body { height:100%; margin:0; background:transparent; font-family:Inter,Segoe UI,Arial,sans-serif; color:#fff }
+    #waiting { padding:12px; }
+    #container { display:none; padding:8px; }
+    img.album { width:80px; height:80px; object-fit:cover; border-radius:6px }
   </style>
 </head>
 <body>
   <div id="waiting">Waiting for music...</div>
-  <div id="container" style="display:none;">
-    <div id="album-art">🎵</div>
-    <div id="title">Song Title</div>
-    <div id="artist">Artist Name</div>
-    <div id="time">0:00 / 0:00</div>
+  <div id="container">
+    <img id="art" class="album" src="" alt="cover" style="display:none" />
+    <div id="meta">
+      <div id="title">—</div>
+      <div id="artist">—</div>
+      <div id="time">0:00 / 0:00</div>
+    </div>
   </div>
 
   <script>
-    let ws; let tries = 0; const MAX = 10000;
-    let lastImage = null; let showing = false;
+    // Simple reconnect/backoff
+    const host = window.location.host;
+    let ws, tries = 0, lastImage = null, visible = false;
 
-    function fmt(s){ const m=Math.floor(s/60); const ss=Math.floor(s%60); return m+":"+(ss<10?"0":"")+ss; }
+    function fmt(s){ const m=Math.floor(s/60); const ss=Math.floor(s%60); return m+":"+(ss<10?"0":"")+ss }
 
-    function render(data){
-      if(!data || !data.title){
-        if(showing){ waiting.style.display='block'; container.style.display='none'; showing=false; }
-        return;
-      }
-      if(!showing){ waiting.style.display='none'; container.style.display='block'; showing=true; }
-      title.textContent = data.title || 'Unknown';
-      artist.textContent = data.artist || 'Unknown Artist';
-      if(data.currentTime !== undefined && data.duration){ time.textContent = fmt(data.currentTime)+' / '+fmt(data.duration); }
-      if(data.imageFile !== lastImage){ lastImage = data.imageFile; albumArt.innerHTML = data.imageFile ? '<img src="/image?t='+Date.now()+'" alt="Album Art">' : '🎵'; }
+    function render(d){
+      if(!d || !d.title){ if(visible){ document.getElementById('waiting').style.display='block'; document.getElementById('container').style.display='none'; visible=false } return }
+      document.getElementById('waiting').style.display='none'; document.getElementById('container').style.display='flex'; visible=true;
+      document.getElementById('title').textContent = d.title || 'Unknown';
+      document.getElementById('artist').textContent = d.artist || ''; 
+      if(d.duration) document.getElementById('time').textContent = fmt(d.currentTime||0)+' / '+fmt(d.duration);
+      if(d.imageFile !== lastImage){ lastImage = d.imageFile; const art = document.getElementById('art'); if(d.imageFile){ art.src = '/image?t='+Date.now(); art.style.display='block' } else { art.style.display='none' } }
     }
 
     function connect(){
-      ws = new WebSocket('ws://'+window.location.host);
-      ws.onopen = () => { tries = 0; };
-      ws.onmessage = (e) => render(JSON.parse(e.data));
-      ws.onerror = console.error;
-      ws.onclose = () => { tries++; setTimeout(connect, Math.min(1000*tries, MAX)); };
+      ws = new WebSocket('ws://'+host);
+      ws.onopen = () => { tries = 0 };
+      ws.onmessage = e => { try { render(JSON.parse(e.data)); } catch(e){} };
+      ws.onclose = () => { tries++; setTimeout(connect, Math.min(2000 * tries, 10000)); };
+      ws.onerror = () => {};
     }
     connect();
   </script>
@@ -100,24 +128,42 @@ Album art is served at `/image`; append `?t=${Date.now()}` to avoid caching.
 </html>
 ```
 
+---
+
 ## Best practices
 
-- Prevent flicker: only swap album art when `imageFile` changes; toggle visibility once.
-- Be cache-safe: add a timestamp query to `/image`.
-- Recover cleanly: reconnect with backoff and reset the counter on `onopen`.
-- Keep it transparent: set `body { background: transparent; }` for OBS.
-- Right-size: match your layout to `resolution` so users can copy-paste into OBS.
+- Avoid flicker: only update the DOM or swap album art when the underlying value changes.
+- Be cache-safe: always request album art with a timestamp (`/image?t=${Date.now()}`) to avoid stale images.
+- Handle missing data gracefully: show placeholders when fields are absent.
+- Transparent backgrounds work best for OBS overlays — prefer `background: transparent`.
+- Match your layout to the advertised `resolution` for predictable results in OBS.
 
-## Testing checklist
+---
 
-- Theme folder has both `index.html` and `metadata.json` and valid JSON.
-- Open `http://localhost:3737/themes` to preview; verify album art, text overflow, and paused states.
-- Resize the OBS/browser source to your advertised `resolution` to confirm fit.
+## Preview & testing checklist
+
+- Ensure `index.html` and `metadata.json` exist and JSON is valid.
+- Open `http://localhost:3737/themes` to preview your theme and check:
+  - Album art loads and updates (no flicker)
+  - Text truncation/overflow is handled
+  - Paused state looks correct
+  - Layout fits in your declared `resolution`
+
+---
 
 ## Publishing to the sosu-widgets repo
 
-1) Place your theme under `widgets/your-theme/` with `index.html` and `metadata.json`.
-2) Bump `version` whenever visuals/UX change so users see the Update button.
-3) Commit and open a PR; include a screenshot and the recommended resolution.
+1. Add your theme under `widgets/your-theme/` with `index.html`, `metadata.json`, and assets.
+2. Bump `version` whenever you change visuals or UX so users can update.
+3. Create a PR with a screenshot and the recommended `resolution`.
+
+We’ll review and merge usable themes into the official collection — thank you for contributing!
+
+---
+
+## Licence & contact
+
+- Add your author/credit in `metadata.json`.
+- If you have security concerns or need to contact the project maintainers, use the main project's `SECURITY.md` or open an issue.
 
 Happy building! 🎨

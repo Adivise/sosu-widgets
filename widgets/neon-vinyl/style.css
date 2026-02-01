@@ -1,0 +1,27 @@
+:root{
+  --bg: rgba(6,6,12,0);
+  --neon: #7df9ff;
+  --accent: #ff5ca8;
+  --muted: rgba(255,255,255,0.7);
+}
+html,body{height:100%;margin:0;font-family:Inter,Segoe UI,system-ui,Arial;}
+body{background:transparent;color:var(--muted);display:flex;align-items:center;justify-content:center}
+.container{width:900px;height:360px;display:flex;align-items:center;justify-content:center;position:relative}
+.vinyl-wrap{width:320px;height:320px;position:relative;display:flex;align-items:center;justify-content:center}
+.vinyl{width:260px;height:260px;border-radius:50%;background:#000;border:6px solid rgba(0,0,0,0.6);box-shadow:0 8px 40px rgba(0,0,0,0.6), 0 0 40px rgba(0,0,0,0.6) inset;display:flex;align-items:center;justify-content:center;transform-origin:center center;transition:transform 400ms linear}
+.center-art{width:170px;height:170px;border-radius:50%;background:#111;overflow:hidden;display:flex;align-items:center;justify-content:center;}
+.center-art img{width:100%;height:100%;object-fit:cover;display:block}
+.halo{position:absolute;width:420px;height:420px;border-radius:50%;filter:blur(28px);background: radial-gradient(circle at 30% 30%, rgba(125,249,255,0.12), transparent 20%), radial-gradient(circle at 70% 70%, rgba(255,92,168,0.08), transparent 30%);z-index:-2}
+.info{margin-left:36px;width:420px;display:flex;flex-direction:column;gap:8px}
+.title{font-size:28px;color:white;font-weight:700;letter-spacing:0.2px}
+.artist{font-size:16px;color:rgba(255,255,255,0.75)}
+.time{font-family:monospace;color:rgba(255,255,255,0.65)}
+.controls{margin-top:12px;display:flex;gap:12px;align-items:center}
+.btn{background:linear-gradient(180deg,rgba(255,255,255,0.03),rgba(255,255,255,0.01));border-radius:10px;padding:8px 12px;color:var(--muted);cursor:default}
+.wave-ring{position:absolute;left:0;top:0;width:420px;height:420px;border-radius:50%;pointer-events:none;z-index:-1}
+.playing .vinyl{box-shadow:0 12px 60px rgba(125,249,255,0.12), 0 0 80px rgba(255,92,168,0.06) inset}
+.paused .vinyl{opacity:0.9;transform:scale(0.999)}
+.small-note{font-size:12px;color:rgba(255,255,255,0.48);margin-top:6px}
+/* small responsiveness */
+@media (max-width:960px){.container{transform:scale(0.92)}}
+@media (max-width:700px){.container{transform:scale(0.8)} .info{margin-left:18px}}
