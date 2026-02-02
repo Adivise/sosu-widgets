@@ -4,37 +4,8 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Neon Vinyl — sosu widget</title>
-  <!-- Inlined style.css for standalone compatibility -->
-  <style>
-:root{
-  --bg: rgba(6,6,12,0);
-  --neon: #7df9ff;
-  --accent: #ff5ca8;
-  --muted: rgba(255,255,255,0.7);
-}
-html,body{height:100%;margin:0;font-family:Inter,Segoe UI,system-ui,Arial;}
-body{background:transparent;color:var(--muted);display:flex;align-items:center;justify-content:center}
-.container{width:900px;height:360px;display:flex;align-items:center;justify-content:center;position:relative}
-.vinyl-wrap{width:320px;height:320px;position:relative;display:flex;align-items:center;justify-content:center}
-.vinyl{width:260px;height:260px;border-radius:50%;background:#000;border:6px solid rgba(0,0,0,0.6);box-shadow:0 8px 40px rgba(0,0,0,0.6), 0 0 40px rgba(0,0,0,0.6) inset;display:flex;align-items:center;justify-content:center;transform-origin:center center;transition:transform 400ms linear}
-.center-art{width:170px;height:170px;border-radius:50%;background:#111;overflow:hidden;display:flex;align-items:center;justify-content:center;}
-.center-art img{width:100%;height:100%;object-fit:cover;display:block}
-.halo{position:absolute;width:420px;height:420px;border-radius:50%;filter:blur(28px);background: radial-gradient(circle at 30% 30%, rgba(125,249,255,0.12), transparent 20%), radial-gradient(circle at 70% 70%, rgba(255,92,168,0.08), transparent 30%);z-index:-2}
-.info{margin-left:36px;width:420px;display:flex;flex-direction:column;gap:8px}
-.title{font-size:28px;color:white;font-weight:700;letter-spacing:0.2px}
-.artist{font-size:16px;color:rgba(255,255,255,0.75)}
-.time{font-family:monospace;color:rgba(255,255,255,0.65)}
-.controls{margin-top:12px;display:flex;gap:12px;align-items:center}
-.btn{background:linear-gradient(180deg,rgba(255,255,255,0.03),rgba(255,255,255,0.01));border-radius:10px;padding:8px 12px;color:var(--muted);cursor:default}
-.wave-ring{position:absolute;left:0;top:0;width:420px;height:420px;border-radius:50%;pointer-events:none;z-index:-1}
-.playing .vinyl{box-shadow:0 12px 60px rgba(125,249,255,0.12), 0 0 80px rgba(255,92,168,0.06) inset}
-.paused .vinyl{opacity:0.9;transform:scale(0.999)}
-.small-note{font-size:12px;color:rgba(255,255,255,0.48);margin-top:6px}
-/* small responsiveness */
-@media (max-width:960px){.container{transform:scale(0.92)}}
-@media (max-width:700px){.container{transform:scale(0.8)} .info{margin-left:18px}}
-  </style>
-</head> 
+  <link rel="stylesheet" href="style.css" />
+</head>
 <body>
   <div class="widget container" style="width:900px;height:360px">
     <div class="halo"></div>
@@ -46,142 +17,12 @@ body{background:transparent;color:var(--muted);display:flex;align-items:center;j
         </div>
       </div>
     </div>
-
     <div class="info">
       <div class="title" id="title">—</div>
       <div class="artist" id="artist">—</div>
       <div class="time" id="time">0:00 / 0:00</div>
-      <div class="controls">
-        <div class="btn">Neon Vinyl</div>
-        <div class="small-note">Reactive waveform ring • Transparent background</div>
-      </div>
     </div>
   </div>
-  <!-- Inlined script.js for standalone compatibility -->
-  <script>
-(function(){
-  const host = window.location.host;
-  let ws; let tries = 0; const MAX=10000;
-  let lastImage = null; let playing = false;
-
-  const art = document.getElementById('art');
-  const titleEl = document.getElementById('title');
-  const artistEl = document.getElementById('artist');
-  const timeEl = document.getElementById('time');
-  const container = document.querySelector('.widget');
-  const vinyl = document.querySelector('.vinyl');
-  const canvas = document.getElementById('ring');
-  const ctx = canvas.getContext('2d');
-
-  canvas.width = 420; canvas.height = 420;
-  const cx = canvas.width/2, cy = canvas.height/2, radius = 170;
-
-  function fmt(s){ const m=Math.floor(s/60); const ss=Math.floor(s%60); return m+":"+(ss<10?"0":"")+ss }
-
-  function seedFrom(str){ let h=2166136261; for(let i=0;i<str.length;i++){ h ^= str.charCodeAt(i); h += (h<<1)+(h<<4)+(h<<7)+(h<<8)+(h<<24); } return Math.abs(h)%100000 }
-
-  function drawRing(time, seed){
-    ctx.clearRect(0,0,canvas.width,canvas.height);
-    const bands = 72; // points
-    ctx.save();
-    ctx.translate(cx,cy);
-    ctx.rotate((time%30)/30 * Math.PI*2);
-
-    for(let i=0;i<bands;i++){
-      const a = (i/bands)*Math.PI*2;
-      const noise = (Math.sin(a*12 + seed*0.0003 + time*0.6) + Math.cos(a*7 + time*0.9*seed*0.0001))/2;
-      const h = 8 + Math.abs(noise)*28;
-      const x1 = Math.cos(a)*(radius-h);
-      const y1 = Math.sin(a)*(radius-h);
-      const x2 = Math.cos(a)*(radius+h);
-      const y2 = Math.sin(a)*(radius+h);
-      ctx.beginPath();
-      ctx.moveTo(x1,y1);
-      ctx.lineTo(x2,y2);
-      const grad = ctx.createLinearGradient(x1,y1,x2,y2);
-      grad.addColorStop(0,'rgba(125,249,255,0.02)');
-      grad.addColorStop(1,'rgba(255,92,168,0.45)');
-      ctx.strokeStyle = grad;
-      ctx.lineWidth = 3;
-      ctx.stroke();
-    }
-    ctx.restore();
-  }
-
-  const placeholderSVG = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="170" height="170"><rect width="100%" height="100%" fill="%230b0b0f"/><circle cx="85" cy="85" r="60" fill="%237df9ff"/><text x="50%" y="54%" fill="%23000" font-size="48" font-family="Arial" font-weight="700" text-anchor="middle">NV</text></svg>';
-
-  function getHttpBase(){
-    if (typeof connectedHost === 'string' && connectedHost) return 'http://'+connectedHost;
-    if (window.location && window.location.protocol && window.location.protocol.startsWith('http') && window.location.host) return window.location.protocol+'//'+window.location.host;
-    return 'http://localhost:3737';
-  }
-
-  function render(d){
-    if(!d || !d.title){ titleEl.textContent='—'; artistEl.textContent=''; timeEl.textContent='waiting'; container.classList.remove('playing'); container.classList.add('paused'); return }
-    titleEl.textContent = d.title || 'Unknown';
-    artistEl.textContent = d.artist || ''; 
-    timeEl.textContent = (d.currentTime !== undefined && d.duration) ? fmt(d.currentTime)+' / '+fmt(d.duration) : '';
-    playing = !d.paused;
-    container.classList.toggle('playing', playing);
-
-    if(d.imageFile !== lastImage){
-      lastImage = d.imageFile;
-      if(d.imageFile === '__placeholder__'){
-        art.src = placeholderSVG; art.style.display='block';
-      } else if(d.imageFile){
-        // prefer server image endpoint if available
-        art.src = getHttpBase() + '/image?t=' + Date.now(); art.style.display='block';
-      } else { art.style.display='none' }
-    }
-
-    // seed by title+artist for deterministic waveform
-    const seed = seedFrom((d.title||'') + '|' + (d.artist||''));
-    drawRing(d.currentTime || (Date.now()/1000), seed);
-  }
-
-  // Try multiple websocket hosts for compatibility with older app versions.
-  const hostCandidates = (function(){
-    const list = [];
-    if (window.location && window.location.host) list.push(window.location.host);
-    list.push('localhost:3737');
-    return list;
-  })();
-
-  let connectedHost = null;
-  let connIndex = 0;
-  let mockTimeout = null;
-  const sampleData = { title: 'Neon Vinyl (preview)', artist: 'Preview Artist', album: '', duration: 95, currentTime: 33, imageFile: '__placeholder__', paused: false };
-
-  function tryConnectCandidate(idx){
-    const h = hostCandidates[idx];
-    try {
-      ws = new WebSocket('ws://'+h);
-    } catch(e){ scheduleNext(); return; }
-
-    ws.onopen = ()=>{ tries=0; connectedHost = h; if (mockTimeout){ clearTimeout(mockTimeout); mockTimeout=null; } };
-    ws.onmessage = e => { try{ render(JSON.parse(e.data)); } catch(e){} };
-    ws.onclose = ()=>{ scheduleNext(); };
-    ws.onerror = ()=>{ /* attempt fallback */ scheduleNext(); };
-
-    // If no real update after a short delay, show sample data so widget doesn't look empty
-    if (!mockTimeout){
-      mockTimeout = setTimeout(()=>{ if(!connectedHost){ render(sampleData); } }, 1200);
-    }
-  }
-
-  function scheduleNext(){
-    tries++;
-    connIndex = (connIndex + 1) % hostCandidates.length;
-    setTimeout(() => tryConnectCandidate(connIndex), Math.min(2000*tries, MAX));
-  }
-
-  function connect(){ connIndex = 0; tries = 0; tryConnectCandidate(connIndex); }
-  connect();
-
-  // subtle rotation animation when playing
-  let rot = 0; function anim(){ requestAnimationFrame(anim); if(playing) rot += 0.0025; vinyl.style.transform = 'rotate('+rot+'turn)'; }
-  anim();
-})();
-  </script>
+  <script src="script.js"></script>
 </body>
 </html>
