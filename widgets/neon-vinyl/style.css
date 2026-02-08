@@ -6,13 +6,13 @@
 }
 html,body{height:100%;margin:0;font-family:Inter,Segoe UI,system-ui,Arial;}
 body{background:transparent;color:var(--muted);display:flex;align-items:center;justify-content:center}
-.container{width:900px;height:360px;display:flex;align-items:center;justify-content:center;position:relative}
-.vinyl-wrap{width:320px;height:320px;position:relative;display:flex;align-items:center;justify-content:center}
-.vinyl{width:260px;height:260px;border-radius:50%;background:#000;border:6px solid rgba(255,92,168,0.4);box-shadow:0 8px 40px rgba(125,249,255,0.3), 0 0 60px rgba(255,92,168,0.4), 0 0 40px rgba(125,249,255,0.2) inset;display:flex;align-items:center;justify-content:center;transform-origin:center center;transition:transform 400ms linear}
-.center-art{width:170px;height:170px;border-radius:50%;background:#111;overflow:hidden;display:flex;align-items:center;justify-content:center;}
+.container{width:500px;height:150px;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden}
+.vinyl-wrap{width:120px;height:120px;position:relative;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.vinyl{width:96px;height:96px;border-radius:50%;background:#000;border:5px solid rgba(255,92,168,0.4);box-shadow:0 6px 30px rgba(125,249,255,0.3), 0 0 40px rgba(255,92,168,0.4), 0 0 30px rgba(125,249,255,0.2) inset;display:flex;align-items:center;justify-content:center;transform-origin:center center;transition:transform 400ms linear}
+.center-art{width:62px;height:62px;border-radius:50%;background:#111;overflow:hidden;display:flex;align-items:center;justify-content:center;}
 .center-art img{width:100%;height:100%;object-fit:cover;display:block}
-.halo{position:absolute;width:420px;height:420px;border-radius:50%;filter:blur(28px);background: radial-gradient(circle at 30% 30%, rgba(125,249,255,0.12), transparent 20%), radial-gradient(circle at 70% 70%, rgba(255,92,168,0.08), transparent 30%);z-index:-2}
-.info{margin-left:36px;width:420px;display:flex;flex-direction:column;gap:8px}
+.halo{position:absolute;width:260px;height:260px;border-radius:50%;filter:blur(20px);background: radial-gradient(circle at 30% 30%, rgba(125,249,255,0.12), transparent 20%), radial-gradient(circle at 70% 70%, rgba(255,92,168,0.08), transparent 30%);z-index:-2;left:50px;top:-80px}
+.info{margin-left:18px;width:320px;display:flex;flex-direction:column;gap:8px}
 .title{font-size:28px;color:white;font-weight:700;letter-spacing:0.2px;text-shadow:0 0 10px rgba(125,249,255,0.8), 0 0 20px rgba(255,92,168,0.6)}
 .artist{font-size:16px;color:rgba(255,255,255,0.75);text-shadow:0 0 8px rgba(125,249,255,0.4)}
 .time{font-family:monospace;color:rgba(255,255,255,0.65)}
