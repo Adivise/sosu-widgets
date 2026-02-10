@@ -5,8 +5,8 @@
   --muted: rgba(255,255,255,0.7);
 }
 html,body{height:100%;margin:0;font-family:Inter,Segoe UI,system-ui,Arial;}
-body{background:transparent;color:var(--muted);display:flex;align-items:center;justify-content:center}
-.container{width:500px;height:150px;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden}
+body{background:transparent;color:var(--muted);padding:16px}
+.container{width:500px;height:150px;display:flex;align-items:center;gap:0;position:relative;overflow:hidden}
 .vinyl-wrap{width:120px;height:120px;position:relative;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .vinyl{width:96px;height:96px;border-radius:50%;background:#000;border:5px solid rgba(255,92,168,0.4);box-shadow:0 6px 30px rgba(125,249,255,0.3), 0 0 40px rgba(255,92,168,0.4), 0 0 30px rgba(125,249,255,0.2) inset;display:flex;align-items:center;justify-content:center;transform-origin:center center;transition:transform 400ms linear}
 .center-art{width:62px;height:62px;border-radius:50%;background:#111;overflow:hidden;display:flex;align-items:center;justify-content:center;}
