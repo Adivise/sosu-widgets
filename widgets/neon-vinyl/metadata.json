@@ -1,8 +1,8 @@
 {
   "name": "Neon Vinyl",
-  "version": "1.8.0",
+  "version": "1.9.0",
   "author": "Adivise",
-  "resolution": "500x150",
+  "resolution": "360x136",
   "authorLinks": "https://github.com/Adivise",
   "description": "A bold, neon-styled rotating vinyl widget with a reactive waveform ring."
 }
