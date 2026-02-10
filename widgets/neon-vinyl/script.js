@@ -17,12 +17,21 @@
     function fmt(s){ const m=Math.floor(s/60); const ss=Math.floor(s%60); return m+":"+(ss<10?"0":"")+ss }
 
     function render(d){
-      if(!d || !d.title){ titleEl.textContent='—'; artistEl.textContent=''; timeEl.textContent='waiting'; container.classList.remove('playing'); container.classList.add('paused'); return }
+      if(!d || !d.title){ 
+        titleEl.textContent='Waiting for music...'; 
+        artistEl.textContent=''; 
+        timeEl.textContent=''; 
+        container.classList.remove('playing'); 
+        container.classList.add('paused'); 
+        playing = false;
+        return;
+      }
       titleEl.textContent = d.title || 'Unknown';
       artistEl.textContent = d.artist || ''; 
       timeEl.textContent = (d.currentTime !== undefined && d.duration) ? fmt(d.currentTime)+' / '+fmt(d.duration) : '';
       playing = !d.paused;
       container.classList.toggle('playing', playing);
+      container.classList.toggle('paused', !playing);
 
       if(d.imageFile !== lastImage){ lastImage = d.imageFile; if(d.imageFile){ art.src = '/image?t='+Date.now(); art.style.display='block' } else { art.style.display='none' }}
     }
@@ -36,8 +45,27 @@
     }
     connect();
 
-    // subtle rotation animation when playing
-    let rot = 0; function anim(){ requestAnimationFrame(anim); if(playing) rot += 0.0025; vinyl.style.transform = 'rotate('+rot+'turn)'; }
+    // smooth rotation animation when playing
+    let rot = 0; 
+    let targetSpeed = 0;
+    let currentSpeed = 0;
+    
+    function anim(){ 
+      requestAnimationFrame(anim); 
+      
+      // Smooth acceleration/deceleration
+      if(playing) {
+        targetSpeed = 0.004; // RPM equivalent
+      } else {
+        targetSpeed = 0;
+      }
+      
+      // Ease towards target speed
+      currentSpeed += (targetSpeed - currentSpeed) * 0.05;
+      rot += currentSpeed;
+      
+      vinyl.style.transform = 'rotate('+rot+'turn)'; 
+    }
     anim();
   }
 
